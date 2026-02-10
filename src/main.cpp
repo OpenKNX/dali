@@ -1,3 +1,5 @@
+#ifdef DALI_LIB_TEST
+
 #include "Arduino.h"
 #include "Dali/Master.h"
 
@@ -118,3 +120,5 @@ void loop()
         }
     }
 }
+
+#endif
