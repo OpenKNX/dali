@@ -2,14 +2,38 @@
 
 namespace Dali
 {
+    void Master::lock() {
+    #if defined(ARDUINO_ARCH_ESP32)
+        xSemaphoreTake(_mutex, portMAX_DELAY);
+    #elif defined(ARDUINO_ARCH_RP2040)
+        mutex_enter_blocking(&_mutex);
+    #endif
+    }
+
+    void Master::unlock() {
+    #if defined(ARDUINO_ARCH_ESP32)
+        xSemaphoreGive(_mutex);
+    #elif defined(ARDUINO_ARCH_RP2040)
+        mutex_exit(&_mutex);
+    #endif
+    }
+
     void Master::init(uint tx, uint rx)
     {
+        #if defined(ARDUINO_ARCH_ESP32)
+            _mutex = xSemaphoreCreateMutex();
+        #elif defined(ARDUINO_ARCH_RP2040)
+            mutex_init(&_mutex);
+        #endif
+        lock();
         _dll.init(tx, rx);
         _dll.registerMonitor([this](Frame frame) { this->receivedFrame(frame); });
+        unlock();
     }
 
     void Master::process()
     {
+        lock();
         _dll.process();
 
         for(auto &r : _responses)
@@ -35,6 +59,7 @@ namespace Dali
                 removeResponse(r.ref);
             }
         }
+        unlock();
     }
 
     void Master::removeResponse(uint32_t ref)
@@ -61,24 +86,29 @@ namespace Dali
 
     Response Master::getResponse(uint32_t ref)
     {
+        lock();
         for(auto &r : _responses)
         {
             if(r.ref == ref)
             {
                 if(r.state == ResponseState::RECEIVED || r.state == ResponseState::NO_ANSWER)
                     removeResponse(ref);
+                unlock();
                 return r;
             }
         }
 
         Response r;
         r.state = ResponseState::NOT_REGISTERED;
+        unlock();
         return r;
     }
 
     void Master::registerMonitor(std::function<void(Frame)> callback)
     {
+        lock();
         _dll.registerMonitor(callback);
+        unlock();
     }
 
     void Master::receivedFrame(Frame frame)
@@ -103,15 +133,18 @@ namespace Dali
 
     void Master::sendArc(uint8_t address, uint8_t value, bool isGroup)
     {
+        lock();
         Frame frame;
         frame.data = prepareCommand16(isGroup, address, false, value);
         frame.flags = DALI_FRAME_FORWARD;
         frame.size = 16;
         _dll.transmitFrame(frame);
+        unlock();
     }
 
     uint32_t Master::sendCommand(uint8_t address, uint8_t command, bool isGroup, bool response)
     {
+        lock();
         Frame frame;
         frame.data = prepareCommand16(isGroup, address, true, command);
         frame.flags = DALI_FRAME_FORWARD;
@@ -133,11 +166,13 @@ namespace Dali
         }
 
         _dll.transmitFrame(frame);
+        unlock();
         return frame.ref;
     }
 
     uint32_t Master::sendSpecialCommand(uint8_t command, uint8_t value, bool response)
     {
+        lock();
         Frame frame;
         frame.data = prepareCommand16(true, command, true, value);
         frame.flags = DALI_FRAME_FORWARD;
@@ -159,19 +194,23 @@ namespace Dali
         }
 
         _dll.transmitFrame(frame);
+        unlock();
         return frame.ref;
     }
 
     uint32_t Master::sendExtendedCommand(uint8_t address, uint8_t deviceType, uint8_t command, bool isGroup, bool response)
     {
         sendSpecialCommand(SpecialCommand::ENABLE_DT, deviceType, false);
-        return sendCommand(address, command, isGroup, response);
+        uint32_t ref = sendCommand(address, command, isGroup, response);
+        return ref;
     }
 
     uint32_t Master::sendRaw(Frame frame)
     {
+        lock();
         frame.ref = micros();
         _dll.transmitFrame(frame);
+        unlock();
         return frame.ref;
     }
 

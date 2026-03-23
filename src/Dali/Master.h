@@ -3,6 +3,12 @@
 #include "Commands.h"
 #include "Dali/Frame.h"
 #include "DataLinkLayer.h"
+#if defined(ARDUINO_ARCH_ESP32)
+  #include "freertos/FreeRTOS.h"
+  #include "freertos/semphr.h"
+#elif defined(ARDUINO_ARCH_RP2040)
+  #include "pico/mutex.h"
+#endif
 
 namespace Dali
 {
@@ -28,6 +34,13 @@ namespace Dali
     {
         DataLinkLayer _dll;
         std::vector<Response> _responses;
+        #if defined(ARDUINO_ARCH_ESP32)
+            SemaphoreHandle_t _mutex;
+        #elif defined(ARDUINO_ARCH_RP2040)
+            mutex_t _mutex;
+        #endif
+        void lock();
+        void unlock();
         void receivedFrame(Frame frame);
         uint32_t getResponseIndex(uint32_t ref);
         void removeResponse(uint32_t ref);
