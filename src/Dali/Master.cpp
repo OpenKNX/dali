@@ -2,6 +2,15 @@
 
 namespace Dali
 {
+    Master::Master()
+    {
+    #if defined(ARDUINO_ARCH_ESP32)
+        _mutex = xSemaphoreCreateMutex();
+    #elif defined(ARDUINO_ARCH_RP2040)
+        mutex_init(&_mutex);
+    #endif
+    }
+
     void Master::lock() {
     #if defined(ARDUINO_ARCH_ESP32)
         xSemaphoreTake(_mutex, portMAX_DELAY);
@@ -20,11 +29,6 @@ namespace Dali
 
     void Master::init(uint tx, uint rx)
     {
-        #if defined(ARDUINO_ARCH_ESP32)
-            _mutex = xSemaphoreCreateMutex();
-        #elif defined(ARDUINO_ARCH_RP2040)
-            mutex_init(&_mutex);
-        #endif
         lock();
         _dll.init(tx, rx);
         _dll.registerMonitor([this](Frame frame) { this->receivedFrame(frame); });
