@@ -26,7 +26,14 @@ namespace Dali
 
             _queueHandle = xQueueCreate(1, sizeof(rmt_rx_done_event_data_t));
 
-            xTaskCreate(Rmt::task, _taskName, 4096, this, 0, &_taskHandle);
+            // Pin the RX-task to APP_CPU (core 1) with elevated priority.
+            // Default xTaskCreate places at idle priority on an unpinned core,
+            // where WiFi/lwIP/Arduino-loop preempt it. Missed re-arm of
+            // rmt_receive() during the ~1.7-18 ms backward-frame window then
+            // truncates incoming frames (reported as bits=6/7/0 by the gateway
+            // daliMonitor). Pinning to core 1 isolates from WiFi (core 0);
+            // priority 10 keeps the loopTask (prio 1) from blocking us.
+            xTaskCreatePinnedToCore(Rmt::task, _taskName, 4096, this, 10, &_taskHandle, 1);
             ESP_ERROR_CHECK(rmt_new_rx_channel(&_channelConfig, &_channelHandle));
             ESP_ERROR_CHECK(rmt_rx_register_event_callbacks(_channelHandle, &callback, _queueHandle));
             ESP_ERROR_CHECK(rmt_enable(_channelHandle));
