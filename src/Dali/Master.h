@@ -46,6 +46,7 @@ namespace Dali
         void removeResponse(uint32_t ref);
 
         public:
+            Master();
             void init(uint tx, uint rx);
             void process();
 
