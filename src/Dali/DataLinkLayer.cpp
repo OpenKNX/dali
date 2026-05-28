@@ -17,9 +17,9 @@ namespace Dali
 
         // Handle 25-bit frames for edali 
         if (frame.size == 25)
-        {
-            frame.data = ((frame.data & 0xFFFF00) << 1) | (frame.data & 0xFF) | 0x100;
-        }
+        {
+            frame.data = ((frame.data & 0xFFFF00) << 1) | (frame.data & 0xFF) | 0x100;
+        }
 
         frame.timestamp = micros();
         _txQueue.push(frame);
@@ -30,10 +30,10 @@ namespace Dali
     void DataLinkLayer::receivedFrame(Frame frame)
     {
         // Handle 25-bit frames for edali 
-        if (frame.size == 25)
-        {
-            frame.data = ((frame.data >> 1) & 0xFFFF00) | (frame.data & 0xFF);
-        }
+        if (frame.size == 25)
+        {
+            frame.data = ((frame.data >> 1) & 0xFFFF00) | (frame.data & 0xFF);
+        }
         // check it response is in expeted time frame of 22TE.
         if (_nextResponse)
         {
