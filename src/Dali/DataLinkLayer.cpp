@@ -29,11 +29,6 @@ namespace Dali
     // This function actually does more than it should—it takes on tasks typically handled by the network layer.
     void DataLinkLayer::receivedFrame(Frame frame)
     {
-        // Handle 25-bit frames for edali 
-        if (frame.size == 25)
-        {
-            frame.data = ((frame.data >> 1) & 0xFFFF00) | (frame.data & 0xFF);
-        }
         // check it response is in expeted time frame of 22TE.
         if (_nextResponse)
         {
@@ -65,6 +60,12 @@ namespace Dali
                 frame.data = 0;
                 frame.size = 0;
             }
+        }
+        
+        // Handle 25-bit frames for edali 
+        if (frame.size == 25)
+        {
+            frame.data = ((frame.data >> 1) & 0xFFFF00) | (frame.data & 0xFF);
         }
 
         // Regardless of the message received, the transmission is always terminated afterward.
