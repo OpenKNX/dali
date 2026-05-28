@@ -14,6 +14,13 @@ namespace Dali
     bool DataLinkLayer::transmitFrame(Frame frame)
     {
         if (frame.size > 32) return false;
+
+        // Handle 25-bit frames for edali 
+        if (frame.size == 25)
+        {
+            frame.data = ((frame.data & 0xFFFF00) << 1) | (frame.data & 0xFF) | 0x100;
+        }
+
         frame.timestamp = micros();
         _txQueue.push(frame);
         return true;
@@ -22,7 +29,11 @@ namespace Dali
     // This function actually does more than it should—it takes on tasks typically handled by the network layer.
     void DataLinkLayer::receivedFrame(Frame frame)
     {
-
+        // Handle 25-bit frames for edali 
+        if (frame.size == 25)
+        {
+            frame.data = ((frame.data >> 1) & 0xFFFF00) | (frame.data & 0xFF);
+        }
         // check it response is in expeted time frame of 22TE.
         if (_nextResponse)
         {
