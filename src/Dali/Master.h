@@ -61,7 +61,7 @@ namespace Dali
             /** Send an ExtendedCommand with a EnableDT before */
             uint32_t sendExtendedCommand(uint8_t address, uint8_t deviceType, uint8_t command, bool isGroup = false, bool response = false);
             /** Send a raw telegram */
-            uint32_t sendRaw(Frame frame);
+            uint32_t sendRaw(Frame frame, bool response = false);
 
             /** Prepare a command with 16 bits. */
             uint32_t prepareCommand16(bool isGroup, uint8_t address, bool selector, uint8_t command);

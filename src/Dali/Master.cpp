@@ -209,10 +209,16 @@ namespace Dali
         return ref;
     }
 
-    uint32_t Master::sendRaw(Frame frame)
+    uint32_t Master::sendRaw(Frame frame, bool response)
     {
         lock();
         frame.ref = micros();
+        if(response)
+        {
+            Response r;
+            r.ref = frame.ref;
+            _responses.push_back(r);
+        }
         _dll.transmitFrame(frame);
         unlock();
         return frame.ref;
